@@ -3,16 +3,17 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Photo, FilterType, FrameId } from '@/src/types';
-import { applyFilterAndFrameToImage } from '@/src/utils/imageUtils';
+import { Photo, FilterType, FrameId, Overlay, TextOverlay, ShapeOverlay } from '@/src/types';
+import { applyFilterFrameAndOverlaysToImage } from '@/src/utils/imageUtils';
 
 interface WebcamCaptureProps {
   onPhotoTaken: (photo: Photo) => void;
   selectedFilter: FilterType;
   selectedFrame: FrameId;
+  overlays?: Overlay[];
 }
 
-export default function WebcamCapture({ onPhotoTaken, selectedFilter, selectedFrame }: WebcamCaptureProps) {
+export default function WebcamCapture({ onPhotoTaken, selectedFilter, selectedFrame, overlays = [] }: WebcamCaptureProps) {
   const webcamRef = useRef<Webcam>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -42,8 +43,8 @@ export default function WebcamCapture({ onPhotoTaken, selectedFilter, selectedFr
         setFlashEffect(true);
         setTimeout(() => setFlashEffect(false), 200);
 
-        // Apply filter + frame
-        const finalImage = await applyFilterAndFrameToImage(imageSrc, selectedFilter, selectedFrame);
+  // Apply filter + frame + overlays
+  const finalImage = await applyFilterFrameAndOverlaysToImage(imageSrc, selectedFilter, selectedFrame, overlays);
 
         const photo: Photo = {
           id: Date.now().toString(),
@@ -51,6 +52,7 @@ export default function WebcamCapture({ onPhotoTaken, selectedFilter, selectedFr
           timestamp: Date.now(),
           filter: selectedFilter,
           frame: selectedFrame,
+          overlays: overlays,
         };
 
         onPhotoTaken(photo);
@@ -58,7 +60,7 @@ export default function WebcamCapture({ onPhotoTaken, selectedFilter, selectedFr
     }
     
     setIsCapturing(false);
-  }, [onPhotoTaken, selectedFilter, selectedFrame]);
+  }, [onPhotoTaken, selectedFilter, selectedFrame, overlays]);
 
   const startCountdown = useCallback(() => {
     if (isCapturing) return;
@@ -105,6 +107,26 @@ export default function WebcamCapture({ onPhotoTaken, selectedFilter, selectedFr
 
       {/* Live Frame Overlay */}
       <FrameOverlay frame={selectedFrame} />
+
+      {/* Live Overlays */}
+      {overlays && overlays.length > 0 && (
+        <div className="absolute inset-0 pointer-events-none">
+          {overlays.map((ov) => (
+            <div key={ov.id} className="absolute select-none" style={{ left: `${ov.x * 100}%`, top: `${ov.y * 100}%`, transform: 'translate(-50%, -50%)' }}>
+              { isTextOverlay(ov) ? (
+                <span style={{
+                  color: (ov as TextOverlay).color,
+                  fontWeight: (ov as TextOverlay).bold ? 700 : 400,
+                  fontSize: (ov as TextOverlay).fontSize,
+                  textShadow: (ov as TextOverlay).shadowColor && (ov as TextOverlay).shadowBlur ? `0 0 ${(ov as TextOverlay).shadowBlur}px ${(ov as TextOverlay).shadowColor}` : undefined,
+                }}>{(ov as TextOverlay).text}</span>
+              ) : (
+                <ShapeBadge ov={ov as ShapeOverlay} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Countdown Overlay */}
       <AnimatePresence>
@@ -191,6 +213,38 @@ function getFilterStyle(filter: FilterType): string {
     default:
       return 'none';
   }
+}
+
+function ShapeBadge({ ov }: { ov: ShapeOverlay }) {
+  const size = ov.size || 24;
+  const style: React.CSSProperties = { width: size * 2, height: size * 2 };
+  switch (ov.shape) {
+    case 'heart':
+      return (
+        <svg viewBox="0 0 100 100" style={style}>
+          <path d="M50 80 C 20 60, 5 45, 20 25 C 35 10, 50 25, 50 25 C 50 25, 65 10, 80 25 C 95 45, 80 60, 50 80 Z" fill={ov.fill} stroke={ov.stroke} strokeWidth={ov.strokeWidth} />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg viewBox="0 0 100 100" style={style}>
+          <polygon points="50,5 61,35 95,35 67,55 77,87 50,68 23,87 33,55 5,35 39,35" fill={ov.fill} stroke={ov.stroke} strokeWidth={ov.strokeWidth} />
+        </svg>
+      );
+    case 'sparkle':
+      return (
+        <svg viewBox="0 0 100 100" style={style}>
+          <line x1="50" y1="10" x2="50" y2="90" stroke={ov.fill} strokeWidth={ov.strokeWidth || 4} />
+          <line x1="10" y1="50" x2="90" y2="50" stroke={ov.fill} strokeWidth={ov.strokeWidth || 4} />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function isTextOverlay(ov: Overlay): ov is TextOverlay {
+  return (ov as TextOverlay).type === 'text';
 }
 
 function FrameOverlay({ frame }: { frame: FrameId }) {
@@ -315,6 +369,129 @@ function FrameOverlay({ frame }: { frame: FrameId }) {
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
           <div className="absolute inset-0 rounded-xl" style={{ boxShadow: 'inset 0 0 120px rgba(255,255,255,0.35)' }} />
           <div className="w-[95%] h-[95%] rounded-xl border-4" style={{ borderImage: 'linear-gradient(45deg,#c59d5f,#ffd700,#c59d5f) 1', borderStyle: 'solid' }} />
+        </div>
+      );
+    case 'pastel-1':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-8" style={{ borderImage: 'linear-gradient(45deg,#fbcfe8,#fde68a,#bfdbfe,#ddd6fe) 1', borderStyle: 'solid' }} />
+        </div>
+      );
+    case 'pastel-2':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-8 border-rose-400" />
+          <div className="absolute inset-[3%] rounded-2xl" style={{ background: 'linear-gradient(180deg, rgba(255,237,213,0.6), rgba(254,215,170,0.6))' }} />
+        </div>
+      );
+    case 'ocean':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-8" style={{ borderImage: 'linear-gradient(180deg,#60a5fa,#14b8a6) 1', borderStyle: 'solid' }} />
+          <div className="absolute left-[3%] right-[3%] bottom-[3%] h-6 opacity-70" style={{ background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.7) 0 8px, transparent 8px 16px)' }} />
+        </div>
+      );
+    case 'school':
+      return (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-[3%] rounded-lg bg-white/70" />
+          <div className="absolute inset-[3%] rounded-lg" style={{ backgroundImage: 'linear-gradient(to bottom, rgba(59,130,246,0.35) 1px, transparent 1px)', backgroundSize: '100% 12px' }} />
+          <div className="absolute left-[6%] top-[6%] bottom-[6%] w-0.5 bg-red-400/50" />
+          {['-8deg','10deg','8deg','-10deg'].map((rot, i) => (
+            <div key={i} className="absolute w-16 h-3 bg-[#fefcbf] border border-black/10 shadow-sm" style={{ transform: `rotate(${rot})`, ...(i===0?{left:'4%',top:'4%'}:i===1?{right:'4%',top:'4%'}:i===2?{left:'4%',bottom:'4%'}:{right:'4%',bottom:'4%'}) }} />
+          ))}
+        </div>
+      );
+    case 'bubble':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-4 border-pink-400/60" />
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="absolute rounded-full" style={{ width: 12 + (i%6)*2, height: 12 + (i%6)*2, left: `${(i*13)%100}%`, top: i%2? '4%':'auto', bottom: i%2? 'auto':'4%', background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(244,114,182,0.45))' }} />
+          ))}
+        </div>
+      );
+    case 'sticker':
+      return (
+        <div className="absolute inset-0 pointer-events-none">
+          {['✨','💜','🌈','📸','⭐','🎀','🍓','🦄','🌸','🎈'].map((e,i)=> (
+            <div key={i} className="absolute text-xl" style={{ left: `${(i*9)%100}%`, top: i%2? '3%':'auto', bottom: i%2? 'auto':'3%', transform: `rotate(${(i%5-2)*5}deg)` }}>{e}</div>
+          ))}
+          <div className="absolute inset-[3%] rounded-2xl border-4 border-indigo-500/60" />
+        </div>
+      );
+    case 'comic':
+      return (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-[3%] rounded-xl border-4 border-slate-800/50" />
+          <div className="absolute left-4 top-4 w-10 h-10 bg-orange-500/70 shadow-lg" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+          <div className="absolute right-4 bottom-4 w-12 h-12 bg-violet-500/70 shadow-lg" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+        </div>
+      );
+    case 'flower':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-8 border-emerald-500/60" />
+          {['left-6 top-6','right-6 top-6','left-6 bottom-6','right-6 bottom-6'].map((pos,i)=> (
+            <div key={i} className={`absolute ${pos}`}>
+              <div className="w-12 h-12 rounded-full bg-pink-300/70 absolute" style={{ transform: 'translate(8px,0)' }} />
+              <div className="w-12 h-12 rounded-full bg-blue-300/70 absolute" style={{ transform: 'translate(-8px,0)' }} />
+              <div className="w-12 h-12 rounded-full bg-green-300/70 absolute" style={{ transform: 'translate(0,8px)' }} />
+              <div className="w-12 h-12 rounded-full bg-yellow-300/70 absolute" style={{ transform: 'translate(0,-8px)' }} />
+            </div>
+          ))}
+        </div>
+      );
+    case 'hearts':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-4 border-pink-500" />
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="absolute text-pink-500" style={{ left: `${(i*11)%100}%`, top: i%2? '4%':'auto', bottom: i%2? 'auto':'4%', transform: `rotate(${(i%5-2)*8}deg)` }}>💖</div>
+          ))}
+        </div>
+      );
+    case 'sparkle':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-8" style={{ borderImage: 'linear-gradient(45deg,#f472b6,#fb7185) 1', borderStyle: 'solid' }} />
+          {Array.from({ length: 26 }).map((_, i) => (
+            <div key={i} className="absolute text-white" style={{ left: `${(i*13)%100}%`, top: i%2? '3%':'auto', bottom: i%2? 'auto':'3%' }}>✨</div>
+          ))}
+        </div>
+      );
+    case 'ribbon':
+      return (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-[3%] rounded-2xl border-8 border-pink-400/80" />
+          {['-25deg','25deg','-155deg','155deg'].map((rot, i) => (
+            <div key={i} className="absolute w-20 h-5 bg-pink-400" style={{ transform: `rotate(${rot})`, ...(i===0?{left:'5%',top:'5%'}:i===1?{right:'5%',top:'5%'}:i===2?{left:'5%',bottom:'5%'}:{right:'5%',bottom:'5%'}) }} />
+          ))}
+        </div>
+      );
+    case 'candy':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[94%] h-[94%] rounded-2xl border-12 border-white" />
+          <div className="absolute inset-[3%] rounded-2xl" style={{ background: 'repeating-linear-gradient(45deg,#fb7185 0 10px, transparent 10px 20px)' }} />
+        </div>
+      );
+    case 'blossom':
+      return (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-[3%] rounded-2xl border-4 border-pink-500/70" />
+          {Array.from({ length: 24 }).map((_, i) => (
+            <div key={i} className="absolute w-3 h-2 rounded-full bg-pink-300/70" style={{ left: `${(i*9)%100}%`, top: i%2? '4%':'auto', bottom: i%2? 'auto':'4%', transform: `rotate(${(i%7-3)*10}deg)` }} />
+          ))}
+        </div>
+      );
+    case 'kawaii':
+      return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[92%] h-[92%] rounded-4xl border-16 border-rose-500" />
+          {['🩷','✨','🍑','🐰','🌸','🎀','🩷','✨','🌸','🎀'].map((e,i)=> (
+            <div key={i} className="absolute text-2xl" style={{ left: `${(i*10)%100}%`, top: i%2? '3%':'auto', bottom: i%2? 'auto':'3%' }}>{e}</div>
+          ))}
         </div>
       );
   }

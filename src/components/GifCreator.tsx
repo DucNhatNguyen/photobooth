@@ -2,18 +2,19 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Photo, FrameId } from '@/src/types';
+import { Photo, FrameId, Overlay } from '@/src/types';
 import { downloadImage } from '@/src/utils/imageUtils';
 import gifshot from 'gifshot';
 import FrameSelector from '@/src/components/FrameSelector';
-import { applyFilterAndFrameToImage } from '@/src/utils/imageUtils';
+import { applyFilterFrameAndOverlaysToImage } from '@/src/utils/imageUtils';
 import Image from 'next/image';
 
 interface GifCreatorProps {
   photos: Photo[];
+  overlays?: Overlay[];
 }
 
-export default function GifCreator({ photos }: GifCreatorProps) {
+export default function GifCreator({ photos, overlays = [] }: GifCreatorProps) {
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [gifImage, setGifImage] = useState<string | null>(null);
   const [gifDims, setGifDims] = useState<{ w: number; h: number } | null>(null);
@@ -36,12 +37,12 @@ export default function GifCreator({ photos }: GifCreatorProps) {
     if (selectedPhotos.length < 2) return;
 
     setIsCreating(true);
-    // Optionally apply selected frame to each frame of GIF
+    // Optionally apply selected frame and overlays to each frame of GIF
     let imageUrls = selectedPhotos.map((p) => p.url);
     if (selectedFrame !== 'none') {
       try {
         imageUrls = await Promise.all(
-          imageUrls.map((url) => applyFilterAndFrameToImage(url, 'none', selectedFrame))
+          imageUrls.map((url) => applyFilterFrameAndOverlaysToImage(url, 'none', selectedFrame, overlays))
         );
       } catch (e) {
         console.warn('Could not apply frame to GIF frames:', e);
@@ -67,7 +68,7 @@ export default function GifCreator({ photos }: GifCreatorProps) {
         setIsCreating(false);
       }
     );
-  }, [selectedPhotos, gifDelay, selectedFrame]);
+  }, [selectedPhotos, gifDelay, selectedFrame, overlays]);
 
   const resetGif = useCallback(() => {
     setGifImage(null);

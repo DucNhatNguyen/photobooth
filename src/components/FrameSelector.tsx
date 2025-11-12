@@ -20,6 +20,22 @@ const frames: { id: FrameId; name: string; icon: string; note?: string }[] = [
   { id: 'tet', name: 'Tết', icon: '🧧', note: 'đỏ + vàng' },
   { id: 'birthday', name: 'Sinh nhật', icon: '🎉', note: 'confetti vui nhộn' },
   { id: 'wedding', name: 'Wedding', icon: '💍', note: 'trắng + vàng sang' },
+  // Pastel & sticker sets
+  { id: 'pastel-1', name: 'Pastel 1', icon: '🌈', note: 'mềm mại nhiều màu' },
+  { id: 'pastel-2', name: 'Pastel 2', icon: '🍑', note: 'cam - hồng dịu' },
+  { id: 'ocean', name: 'Ocean', icon: '🌊', note: 'sóng biển xanh' },
+  { id: 'school', name: 'School', icon: '📒', note: 'giấy kẻ + ghim' },
+  { id: 'bubble', name: 'Bubble', icon: '🫧', note: 'bong bóng kẹo' },
+  { id: 'sticker', name: 'Sticker', icon: '💜', note: 'nhiều sticker xung quanh' },
+  { id: 'comic', name: 'Comic', icon: '💥', note: 'halftone + pop' },
+  { id: 'flower', name: 'Flower', icon: '🌸', note: 'hoa lá góc' },
+  // Pink vibrant favorites
+  { id: 'hearts', name: 'Hearts', icon: '💖', note: 'tim hồng quanh mép' },
+  { id: 'sparkle', name: 'Sparkle', icon: '✨', note: 'ánh nhũ lấp lánh' },
+  { id: 'ribbon', name: 'Ribbon', icon: '🎀', note: 'nơ ruy băng góc' },
+  { id: 'candy', name: 'Candy', icon: '🍬', note: 'kẻ kẹo hồng' },
+  { id: 'blossom', name: 'Blossom', icon: '🌺', note: 'cánh hoa rơi' },
+  { id: 'kawaii', name: 'Kawaii', icon: '🩷', note: 'viền hồng dày + sticker' },
 ];
 
 export default function FrameSelector({ selectedFrame, onFrameChange }: FrameSelectorProps) {

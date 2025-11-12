@@ -3,18 +3,19 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WebcamCapture from '@/src/components/WebcamCapture';
-import PhotoGallery from '@/src/components/PhotoGallery';
 import FilterSelector from '@/src/components/FilterSelector';
 import FrameSelector from '@/src/components/FrameSelector';
 import CollageCreator from '@/src/components/CollageCreator';
 import GifCreator from '@/src/components/GifCreator';
-import { Photo, FilterType, CaptureMode, FrameId } from '@/src/types';
+import { Photo, FilterType, CaptureMode, FrameId, Overlay } from '@/src/types';
+import OverlayEditor from '@/src/components/OverlayEditor';
 
 export default function Home() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
   const [selectedFrame, setSelectedFrame] = useState<FrameId>('none');
   const [captureMode, setCaptureMode] = useState<CaptureMode>('photo');
+  const [overlays, setOverlays] = useState<Overlay[]>([]);
 
   const handlePhotoTaken = (photo: Photo) => {
     setPhotos((prev) => [photo, ...prev]);
@@ -44,9 +45,9 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Panel - Camera */}
-          <div className="lg:col-span-2 space-y-4">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Main Panel - Camera and tools */}
+          <div className="space-y-4">
             {/* Mode Selector */}
             <div className="bg-white rounded-2xl shadow-lg p-4">
               <div className="flex gap-2">
@@ -87,6 +88,7 @@ export default function Home() {
                         onPhotoTaken={handlePhotoTaken}
                         selectedFilter={selectedFilter}
                         selectedFrame={selectedFrame}
+                        overlays={overlays}
                       />
                     </div>
                     <FilterSelector
@@ -97,6 +99,10 @@ export default function Home() {
                       selectedFrame={selectedFrame}
                       onFrameChange={setSelectedFrame}
                     />
+                    {/* Overlay Editor */}
+                    <div className="p-4">
+                      <OverlayEditor overlays={overlays} onChange={setOverlays} title="Chữ & Sticker (áp dụng khi xuất)" />
+                    </div>
                   </motion.div>
                 )}
 
@@ -109,7 +115,7 @@ export default function Home() {
                     transition={{ duration: 0.3 }}
                     className="min-h-[600px]"
                   >
-                    <CollageCreator photos={photos} onClose={() => setCaptureMode('photo')} />
+                    <CollageCreator photos={photos} overlays={overlays} onClose={() => setCaptureMode('photo')} />
                   </motion.div>
                 )}
 
@@ -122,25 +128,14 @@ export default function Home() {
                     transition={{ duration: 0.3 }}
                     className="min-h-[600px]"
                   >
-                    <GifCreator photos={photos} />
+                    <GifCreator photos={photos} overlays={overlays} />
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
 
-          {/* Right Panel - Gallery */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-4 sticky top-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span>🖼️</span>
-                Thư viện ảnh
-              </h2>
-              <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
-                <PhotoGallery photos={photos} onDeletePhoto={handleDeletePhoto} />
-              </div>
-            </div>
-          </div>
+          {/* Right Panel removed to expand main content as requested */}
         </div>
       </div>
     </div>
