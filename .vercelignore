@@ -1,0 +1,10 @@
+# Dev-only HTTPS server and certs (not needed on Vercel)
+server.js
+certs/
+generate-cert.js
+generate-cert.ps1
+
+# Optional local env files (use Vercel env instead)
+.env
+.env.local
+.env.*.local
